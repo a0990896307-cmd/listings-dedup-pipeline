@@ -6,17 +6,22 @@ dataset — merging two different properties, and inventing a sale that
 never happened — are both visible in the data rather than hidden in an
 average.
 
-167 checks, no test framework required:
+207 checks, no test framework required:
 
 ```bash
 pip install rapidfuzz unidecode
 python tests/test_dedup.py     # 66 checks
 python tests/test_ingest.py    # 60 checks
 python tests/test_geo.py       # 41 checks
+python tests/test_api.py       # 40 checks
 ```
 
 Every suite exits non-zero on failure and needs no database, so it can be
 run before reading anything else.
+
+```bash
+python demo.py     # end-to-end, no database or API key
+```
 
 ## The two errors that matter
 
@@ -159,10 +164,40 @@ app/geo.py       comparable search, confidence, quality metrics
 db/schema.sql    PostgreSQL schema
 ```
 
-## Still to build
+## API
 
-Storage layer against PostgreSQL, the HTTP API, and the 14-day validation
-harness. The logic above is implemented and tested; the wiring is not.
+```bash
+uvicorn app.api:app --port 8000
+```
+
+| | |
+|---|---|
+| `GET /health` | mode and whether storage is configured |
+| `POST /comparables` | radius-attributed comparable search |
+| `POST /search` | filter listings; price filters are asking prices only |
+| `GET /dedup/review-queue` | unresolved candidates, highest score first |
+| `GET /dedup/stats` | decision counts and auto-merge rate |
+| `POST /dedup/evaluate` | run dedup over an inline set without writing |
+| `GET /metrics/run` | cost per 1,000 usable over a window |
+| `GET /metrics/completeness` | per-field completeness, coverage, freshness |
+
+Endpoints that need storage return 503 with a message naming the missing
+variable rather than pretending to have data. `GET /health` reports
+`not configured` in that state instead of implying a working backend.
+
+## Running against PostgreSQL
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+export DATABASE_URL=postgresql://...
+uvicorn app.api:app
+```
+
+## Not yet built
+
+The 14-day validation harness, and a positive/negative labelled sample for
+measuring missed duplicates. Both need real Bari data over time rather
+than fixtures.
 
 ## Licence
 

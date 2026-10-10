@@ -100,7 +100,7 @@ def find_comparables(
     lon: float,
     pool: Sequence[dict],
     radii_m: Sequence[float] = DEFAULT_RADII_M,
-    exclude_ids: Sequence[int] = (),
+    exclude_ids: Sequence = (),
     max_results: int = 40,
 ) -> dict:
     """Expand outward from 50m and report what each radius found.
@@ -118,7 +118,10 @@ def find_comparables(
     for radius in radii_m:
         found = 0
         for row in pool:
-            lid = int(row["listing_id"])
+            # Listing ids are strings in some sources and integers in the
+            # database. Keep whatever the caller supplied rather than
+            # forcing a conversion that raises on a legitimate id.
+            lid = row["listing_id"]
             if lid in seen or lid in excluded:
                 continue
             rlat, rlon = row.get("lat"), row.get("lon")
