@@ -68,7 +68,11 @@ _NOISE = {
     "negli", "presso", "zona", "area", "fraz", "localita", "localita",
 }
 
-_PROVINCE = re.compile(r"\b(?:BA|Bari|NA|Napoli|LE|Lecce|TA|Taranto|BR|Brindisi)\b", re.I)
+# Province abbreviations only. Full names are deliberately excluded: a
+# Bari address on "Via Napoli" must not be classified as the province of
+# Naples just because the street shares its name. Two-letter codes are
+# unambiguous; full names are not.
+_PROVINCE = re.compile(r"\b(?:BA|NA|LE|TA|BR|FC|SU|CA|SS|OR|NU|PA|CT|RG|EN|AQ|CH|FE|MO|RE|PR|PO|PZ|TR|AR|SP|SV|IM|TO|BI|CN|AL|AO|AT|CZ|VI|VR|BL|FC|AE|MI|MB|TN|TN|CO|SO)\b")
 
 
 @dataclass
@@ -188,11 +192,12 @@ def normalise(raw: str, comune_hint: str = "") -> Address:
             tokens = tokens[1:]
 
     # Province is easier to spot on the raw text than on stripped tokens,
-    # because it appears as an abbreviation glued to the name.
+    # because it appears glued to the name. Case sensitive: an upper-case
+    # BA is a province code, a lowercase "ba" inside a street name is not.
     province = ""
-    pm = _PROVINCE.search(strip_accents(raw))
+    pm = _PROVINCE.search(raw)
     if pm:
-        province = pm.group(1).lower()
+        province = pm.group(0)
 
     comune = strip_accents(comune_hint).strip() if comune_hint else ""
 
